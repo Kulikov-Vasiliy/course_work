@@ -51,7 +51,8 @@ def get_card_spent(sorted_df: DataFrame) -> list[dict]:
     [{"last_digits": "5814",
       "total_spent": 1262.00,
       "cashback": 12.62}]"""
-    card_spent = []
+    cards = []
+    card_spent = {}
     card_sorted = sorted_df[
         [
             "Номер карты",
@@ -60,56 +61,40 @@ def get_card_spent(sorted_df: DataFrame) -> list[dict]:
             "Сумма операции с округлением"
          ]
     ]
+
     for i, row in card_sorted.iterrows():
         sorted_df["Сумма операции"] = pd.to_numeric(sorted_df["Сумма операции"], errors="coerce")
         sorted_df["Сумма операции с округлением"] = pd.to_numeric(sorted_df["Сумма операции с округлением"], errors="coerce")
         sorted_df["Кэшбэк"] = pd.to_numeric(sorted_df["Кэшбэк"], errors="coerce")  # dropna(how="all")  # .unique()
+
+        if pd.isna(row["Номер карты"]):
+            continue
+
+        last_digit = str(row["Номер карты"]).strip()
+
+        if last_digit not in card_spent:
+            card_spent[last_digit] = {"total_spent": 0, "cashback": 0}
+
         if row["Сумма операции"] < 0:
-            if pd.isna(row["Номер карты"]):
-                continue
-            last_digit = str(row["Номер карты"]).strip()
             total_spent = row["Сумма операции с округлением"]
-            cashback = (row["Сумма операции"] / 100) if pd.isna(row["Кэшбэк"]) else row["Кэшбэк"]
-            cashback = abs(cashback)
-
-            card_spent.append({
-                "last_digit": last_digit,
-                "total_spent": total_spent,
-                "cashback": cashback})
-        elif row["Сумма операции"] > 0:
-            if pd.isna(row["Номер карты"]):
-                continue
-            last_digit = str(row["Номер карты"]).strip()
-            total_spent = row["Сумма операции"]
-            cashback = (row["Сумма операции"] / 100) if pd.isna(row["Кэшбэк"]) else row["Кэшбэк"]
-            cashback = abs(cashback)
-            card_spent.append({
-                "last_digit": last_digit,
-                "total_spent": total_spent,
-                "cashback": cashback})
         else:
-            if pd.isna(row["Номер карты"]):
-                continue
-            last_digit = str(row["Номер карты"]).strip()
-            total_spent = 0
-            cashback = 0
-            card_spent.append({
-                "last_digit": last_digit,
-                "total_spent": total_spent,
-                "cashback": cashback})
+            total_spent = row["Сумма операции"]
 
-    card_df = pd.DataFrame(card_spent)
-    card_df.sort_values(by="last_digit")
-    for last_digit in card_df.iterrows():
-        for cashback, total_spent in card_df.iterrows():
-            if card_df[last_digit] == card_df[last_digit].shift(1):
-                total_spent.sum()
-                cashback.sum()
-            else:
+        cashback = (row["Сумма операции"] / 100) if pd.isna(row["Кэшбэк"]) else row["Кэшбэк"]
+        cashback = abs(cashback)
 
+        card_spent[last_digit]["total_spent"] += total_spent
+        card_spent[last_digit]["cashback"] += cashback
 
-    card_spent_summed = card_df.to_dict()
-    return card_spent_summed
+    for card, values in card_spent.items():
+        card_info = {
+            "last_digits": card,
+            "total_spent": round(values['total_spent'], 2),
+            "cashback": round(values['cashback'], 2)
+        }
+        cards.append(card_info)
+
+    return cards
 
 
 def transactions(sorted_df: DataFrame) -> list[dict]:
@@ -129,7 +114,7 @@ def transactions(sorted_df: DataFrame) -> list[dict]:
     ]
     count = Counter()   # type: ignore[var-annotated]
     for i, row in transaction_sorted.iterrows():
-
+        pass
         """
         for operation in data:
             desc = operation.get("description", "")

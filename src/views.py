@@ -11,7 +11,6 @@ def greetings(date_time:str)-> Dict[str, Any]:
     time_period = get_date_time(date_time)
     sorted_df = get_path_period("../data/operations.xlsx", time_period)
     cards = get_card_spent(sorted_df)
-    print(cards)
     top_transactions = transactions(sorted_df)
     print(top_transactions)
 
