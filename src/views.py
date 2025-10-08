@@ -1,39 +1,30 @@
 # функции генерации json-ответов
-import datetime
-from time import strftime, time
+from typing import Dict, Any
+
+from utils import greet_result, get_date_time, get_path_period, get_card_spent, transactions
+import json
 
 
-def greetings():
-    """Приветствие в формате «Доброе утро» / «Добрый день» / «Добрый вечер» / «Доброй ночи»"""
-    time_form = datetime.datetime(time.today().now()).strftime("""%Y-%m-%d %H:%M:%S""")
-    print(time_form)
-    greet = "е"
-    for time_i in time_form:
-        if "07:00:00" < time_i < "10:00:00":
-            greet = "ое утро"
-        elif "10:00:01" < time_i < "16:00:00":
-            greet = "ый день"
-        elif "16:00:01" < time_i < "22:00:00":
-            greet = "ый вечер"
-        else:
-            greet = "ой ночи"
+def greetings(date_time:str)-> Dict[str, Any]:
+    """Приветствие пользователя в зависимости от его времени суток"""
+    greeting = greet_result()
+    time_period = get_date_time(date_time)
+    sorted_df = get_path_period("../data/operations.xlsx", time_period)
+    cards = get_card_spent(sorted_df)
+    print(cards)
+    top_transactions = transactions(sorted_df)
+    print(top_transactions)
 
-    return f'"Добр{greet}"'
+    data = {
+        "greeting": greeting,
+        "cards": cards,
+        "top_transactions": top_transactions
+    }
 
+    json_data = json.dumps(data, ensure_ascii=False, indent=4)
 
-def card_masked():
-    """Возвращает номер, траты, возврат средств в формате:
-    "cards": [
-        {
-            "last_digits": "5814",
-            "total_spent": 1262.00,
-            "cashback": 12.62  (1 rub/100 rub)
-        }]"""
-    pass
+    return json_data
 
-#
-# if __name__ == "__main__":
-#     print()
 
 
 """{
