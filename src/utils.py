@@ -110,9 +110,6 @@ def get_card_spent(sorted_df: DataFrame) -> list[dict]:
 
     card_spent_summed = card_df.to_dict()
     return card_spent_summed
-    # card_spent.sort_values(by="last_digit")
-
-    # return card_spent
 
 
 def transactions(sorted_df: DataFrame) -> list[dict]:
