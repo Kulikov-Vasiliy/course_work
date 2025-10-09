@@ -1,7 +1,7 @@
 # функции генерации json-ответов
 from typing import Dict, Any
 
-from utils import greet_result, get_date_time, get_path_period, get_card_spent, transactions
+from utils import greet_result, get_date_time, get_path_period, get_card_spent, transactions, get_currency, get_stock_price
 import json
 
 
@@ -12,7 +12,8 @@ def greetings(date_time:str)-> Dict[str, Any]:
     sorted_df = get_path_period("../data/operations.xlsx", time_period)
     cards = get_card_spent(sorted_df)
     top_transactions = transactions(sorted_df)
-    print(top_transactions)
+    currency_rates = get_currency()
+    stock_prices = get_stock_price()
 
     data = {
         "greeting": greeting,

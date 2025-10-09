@@ -1,8 +1,16 @@
 from datetime import datetime
+# noinspection PyUnresolvedReferences
 import pandas as pd
+# noinspection PyUnresolvedReferences
 from pandas import DataFrame
+import requests
+import os
+# noinspection PyUnresolvedReferences
+from dotenv import load_dotenv
 
-
+load_dotenv()
+CURRENCY_API = os.getenv("API_KEY_CURRENCY")
+FOUNDATION_API = os.getenv("API_KEY_S&P500")
 
 def greet_result() -> str:
     """Приветствие в формате «Доброе утро» / «Добрый день» / «Добрый вечер» / «Доброй ночи»"""
@@ -106,24 +114,24 @@ def transactions(sorted_df: DataFrame) -> list[dict]:
     transaction_sorted = sorted_df[
         [
             "Дата платежа",
-            "Сумма операции",
+            "Сумма операции с округлением",
             "Категория",
             "Описание"
         ]
     ].sort_values(by="Дата платежа", ascending=False)
 
     for date, group in transaction_sorted.groupby("Дата платежа"):
-        top_5 = group.nlargest(5, "Сумма операции")
+        top_5 = group.nlargest(5, "Сумма операции с округлением")
         for i, row in top_5.iterrows():
-            if pd.isna(row["Сумма операции"] or row["Категория"] or row["Описание"] or row[ "Дата платежа"]):
+            if pd.isna(row["Сумма операции с округлением"] or row["Категория"] or row["Описание"] or row[ "Дата платежа"]):
                 continue
 
             if "Сумма операции" not in transaction_data:
-                    transaction_data[row["Сумма операции"]] = {"date": row["Дата платежа"], "amount": row["Сумма операции"], "category": row["Категория"],
+                    transaction_data[row["Сумма операции с округлением"]] = {"date": row["Дата платежа"], "amount": row["Сумма операции"], "category": row["Категория"],
                     "description": row["Описание"]}
 
             elif "date" in transaction_data and "category" in transaction_data and "description" in transaction_data:
-                    transaction_data["amount"] += sorted_df["Сумма операции"]
+                    transaction_data["amount"] += sorted_df["Сумма операции с округлением"]
 
     for amount,values in transaction_data.items():
         data = {
@@ -137,3 +145,54 @@ def transactions(sorted_df: DataFrame) -> list[dict]:
             break
 
     return top_transactions
+
+
+def get_currency() -> list[dict] | str:
+    """получает стоимость USD и EUR и формирует список"""
+    response = None
+    try:
+        url = ""
+        headers = {"apikey": CURRENCY_API}
+        # for "USD"
+        payload = {}
+        response = requests.get(url, headers=headers, params=payload)
+        response.raise_for_status()
+        result = response.json()
+        currency = result.get("result", 0)
+
+        # for "EUR"
+        payload = {}
+        response = requests.get(url, headers=headers, params=payload)
+        response.raise_for_status()
+        result = response.json()
+        currency = result.get("result", 0)
+
+        return currency
+
+    except requests.exceptions.HTTPError:
+        if 500 <= response.status_code < 600:  # type: ignore[union-attr]
+            return "Server Error"
+        elif 400 <= response.status_code < 500:  # type: ignore[union-attr]
+            return f"Client Error: {response.status_code}"  # type: ignore[union-attr]
+
+
+ def get_stock_price() -> list[dict] | str:
+     """получет список с ценами ценных бумаг в составе фонда ОША и формирует список"""
+     response = None
+     try:
+         url = ""
+         headers = {"apikey": FOUNDATION_API}
+
+         payload = {}
+         response = requests.get(url, headers=headers, params=payload)
+         response.raise_for_status()
+         result = response.json()
+         rate = result.get("result", 0)
+
+         return rate
+
+     except requests.exceptions.HTTPError:
+         if 500 <= response.status_code < 600:  # type: ignore[union-attr]
+             return "Server Error"
+         elif 400 <= response.status_code < 500:  # type: ignore[union-attr]
+             return f"Client Error: {response.status_code}"  # type: ignore[union-attr]
