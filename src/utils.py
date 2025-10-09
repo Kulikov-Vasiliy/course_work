@@ -1,9 +1,7 @@
 from datetime import datetime
 import pandas as pd
 from pandas import DataFrame
-from collections import Counter
-import numpy as np
-import re
+
 
 
 def greet_result() -> str:
@@ -65,7 +63,7 @@ def get_card_spent(sorted_df: DataFrame) -> list[dict]:
     for i, row in card_sorted.iterrows():
         sorted_df["Сумма операции"] = pd.to_numeric(sorted_df["Сумма операции"], errors="coerce")
         sorted_df["Сумма операции с округлением"] = pd.to_numeric(sorted_df["Сумма операции с округлением"], errors="coerce")
-        sorted_df["Кэшбэк"] = pd.to_numeric(sorted_df["Кэшбэк"], errors="coerce")  # dropna(how="all")  # .unique()
+        sorted_df["Кэшбэк"] = pd.to_numeric(sorted_df["Кэшбэк"], errors="coerce")
 
         if pd.isna(row["Номер карты"]):
             continue
@@ -104,6 +102,7 @@ def transactions(sorted_df: DataFrame) -> list[dict]:
       "category": "Переводы",
       "description": "Перевод Кредитная карта. ТП 10.2 RUR"}]"""
     top_transactions = []
+    transaction_data = {}
     transaction_sorted = sorted_df[
         [
             "Дата платежа",
@@ -111,15 +110,30 @@ def transactions(sorted_df: DataFrame) -> list[dict]:
             "Категория",
             "Описание"
         ]
-    ]
-    count = Counter()   # type: ignore[var-annotated]
-    for i, row in transaction_sorted.iterrows():
-        pass
-        """
-        for operation in data:
-            desc = operation.get("description", "")
-            for category in categories:
-                if category.lower() in desc.lower():
-                    counts[category] += 1
+    ].sort_values(by="Дата платежа", ascending=False)
 
-        return dict(counts)"""
+    for date, group in transaction_sorted.groupby("Дата платежа"):
+        top_5 = group.nlargest(5, "Сумма операции")
+        for i, row in top_5.iterrows():
+            if pd.isna(row["Сумма операции"] or row["Категория"] or row["Описание"] or row[ "Дата платежа"]):
+                continue
+
+            if "Сумма операции" not in transaction_data:
+                    transaction_data[row["Сумма операции"]] = {"date": row["Дата платежа"], "amount": row["Сумма операции"], "category": row["Категория"],
+                    "description": row["Описание"]}
+
+            elif "date" in transaction_data and "category" in transaction_data and "description" in transaction_data:
+                    transaction_data["amount"] += sorted_df["Сумма операции"]
+
+    for amount,values in transaction_data.items():
+        data = {
+            "date": values["date"],
+            "amount": round(values["amount"], 2),
+            "category": values["category"],
+            "description": values["description"]
+        }
+        top_transactions.append(data)
+        if len(top_transactions) >= 5:
+            break
+
+    return top_transactions
