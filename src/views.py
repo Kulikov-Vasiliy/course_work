@@ -1,11 +1,18 @@
 # функции генерации json-ответов
-from typing import Dict, Any
-
-from utils import greet_result, get_date_time, get_path_period, get_card_spent, transactions, get_currency, get_stock_price
 import json
 
+from src.utils import (
+    get_card_spent,
+    get_currency,
+    get_date_time,
+    get_path_period,
+    get_stock_price,
+    greet_result,
+    transactions,
+)
 
-def greetings(date_time:str)-> Dict[str, Any]:
+
+def greetings(date_time: str) -> str:
     """Приветствие пользователя в зависимости от его времени суток"""
     greeting = greet_result()
     time_period = get_date_time(date_time)
@@ -18,13 +25,14 @@ def greetings(date_time:str)-> Dict[str, Any]:
     data = {
         "greeting": greeting,
         "cards": cards,
-        "top_transactions": top_transactions
+        "top_transactions": top_transactions,
+        "currency_rates": currency_rates,
+        "stock_prices": stock_prices,
     }
 
     json_data = json.dumps(data, ensure_ascii=False, indent=4)
 
     return json_data
-
 
 
 """{
