@@ -221,7 +221,7 @@ def get_stock_price() -> list[dict] | str:
                 "company_name": company_name,
                 "sector": sector,
             }
-            print(data)
+
             if "stock" in data:
                 url = "https://finnhub.io/api/v1/quote"
                 payload = {"token": apiKey, "symbol": ticker}
@@ -237,7 +237,6 @@ def get_stock_price() -> list[dict] | str:
                 }
                 data.update(data_rates)
             activ_rate.append(data)
-            print(data)
             if len(activ_rate) > 5:
                 break
 
