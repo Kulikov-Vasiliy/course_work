@@ -5,6 +5,9 @@ from datetime import datetime
 import pandas as pd
 import requests
 
+
+from src.log_config import logger
+
 # noinspection PyUnresolvedReferences
 from dotenv import load_dotenv
 
@@ -19,9 +22,11 @@ apiKey = os.getenv("API_KEY_RATE")
 
 def greet_result() -> str:
     """Приветствие в формате «Доброе утро» / «Добрый день» / «Добрый вечер» / «Доброй ночи»"""
+    logger.info("получение даты и времени пользователя, ее настройка для получения времени")
     now = datetime.now()
     time_form = now.strftime("%H:%M:%S")  # только время
 
+    logger.info("определение сообщения приветствия")
     if "07:00:00" <= time_form <= "10:00:00":
         greet = "ое утро"
     elif "10:00:01" <= time_form <= "16:00:00":
@@ -36,6 +41,7 @@ def greet_result() -> str:
 
 def get_date_time(date_time: str, date_format: str = "%Y-%m-%d %H:%M:%S") -> list[str]:
     """Меняет формат строки и фильтрует от начала месяца до указанного числа"""
+    logger.info("настройка интервала дат от 1 числа месяца до указанного")
     dt = datetime.strptime(date_time, date_format)
     month_start = dt.replace(day=1)
 
@@ -43,6 +49,8 @@ def get_date_time(date_time: str, date_format: str = "%Y-%m-%d %H:%M:%S") -> lis
 
 
 def get_path_period(path_file: str, time_period: list) -> DataFrame:
+    """фильтрует отчет по интервалу дат"""
+    logger.info("выбор нужной страницы excel-файла, ее сортировка")
     df = pd.read_excel(path_file, sheet_name="Отчет по операциям")
     df["Дата операции"] = pd.to_datetime(df["Дата операции"], dayfirst=True)
     start_period = datetime.strptime(time_period[0], "%d.%m.%Y %H:%M:%S")
@@ -66,6 +74,7 @@ def get_card_spent(sorted_df: DataFrame) -> list[dict]:
         ["Номер карты", "Сумма операции", "Кэшбэк", "Сумма операции с округлением"]
     ]
 
+    logger.info("отбор нужных данных для пар ключ-значение списка cards")
     for i, row in card_sorted.iterrows():
         sorted_df["Сумма операции"] = pd.to_numeric(
             sorted_df["Сумма операции"], errors="coerce"
@@ -75,19 +84,23 @@ def get_card_spent(sorted_df: DataFrame) -> list[dict]:
         )
         sorted_df["Кэшбэк"] = pd.to_numeric(sorted_df["Кэшбэк"], errors="coerce")
 
+        logger.info("проверка наличия номера карты в операции")
         if pd.isna(row["Номер карты"]):
             continue
 
+        logger.info("создание пар ключ-значение по номеру карты")
         last_digit = str(row["Номер карты"]).strip()
 
         if last_digit not in card_spent:
             card_spent[last_digit] = {"total_spent": 0, "cashback": 0}
 
+        logger.info("определение источника положительного значения сумм расходов")
         if row["Сумма операции"] < 0:
             total_spent = row["Сумма операции с округлением"]
         else:
             total_spent = row["Сумма операции"]
 
+        logger.info("получение суммы возврата дс от расхода, вычисление сумм")
         cashback = (
             (row["Сумма операции"] / 100) if pd.isna(row["Кэшбэк"]) else row["Кэшбэк"]
         )
@@ -96,6 +109,7 @@ def get_card_spent(sorted_df: DataFrame) -> list[dict]:
         card_spent[last_digit]["total_spent"] += total_spent
         card_spent[last_digit]["cashback"] += cashback
 
+    logger.info("формирование итоговых данных по картам и тратам")
     for card, values in card_spent.items():
         card_info = {
             "last_digits": card,
@@ -119,9 +133,11 @@ def transactions(sorted_df: DataFrame) -> list[dict]:
         ["Дата платежа", "Сумма операции", "Категория", "Описание"]
     ].sort_values(by="Дата платежа", ascending=False)
 
+    logger.info("определение источника данных для пар ключ-значение списка топ 5 расходов")
     for date, group in transaction_sorted.groupby("Дата платежа"):
         top_5 = group.nlargest(5, "Сумма операции")
         for i, row in top_5.iterrows():
+            logger.info("проверка наличия нужных данных")
             if pd.isna(
                 row["Сумма операции"]
                 or row["Категория"]
@@ -129,7 +145,7 @@ def transactions(sorted_df: DataFrame) -> list[dict]:
                 or row["Дата платежа"]
             ):
                 continue
-
+            logger.info("подбор значений, суммирование одинаковых операций по карте")
             if "Сумма операции" not in transaction_data:
                 transaction_data[row["Сумма операции"]] = {
                     "date": row["Дата платежа"],
@@ -145,6 +161,7 @@ def transactions(sorted_df: DataFrame) -> list[dict]:
             ):
                 transaction_data["amount"] += sorted_df["Сумма операции"]  # type: ignore[assignment]
 
+    logger.info("формирование итогового списка")
     for amount, values in transaction_data.items():
         data = {
             "date": values["date"],
@@ -178,25 +195,32 @@ def get_currency() -> list[dict] | str:
         }
 
         try:
+            logger.info("подключение к валютному api-ресурсу")
             response = requests.get(url, params=payload)
             response.raise_for_status()
             result = response.json()
+            logger.info("получение стоимости валюты")
             if "Realtime Currency Exchange Rate" in result:
                 rate = float(
                     result["Realtime Currency Exchange Rate"]["5. Exchange Rate"]
                 )
-                data = {"currency": currency, "rate": round(rate, 2)}
+                logger.info("формирование итога")
+                data = {"currency": currency,
+                        "rate": round(rate, 2)}
                 currency_rate.append(data)
 
         except Exception as e:
+            logger.error(f"Произошла ошибка {e}")
             return str(e)
-
         except requests.exceptions.HTTPError:
             if 500 <= response.status_code < 600:  # type: ignore[union-attr]
+                logger.error("Произошла ошибка сервера")
                 return "Server Error"
             elif 400 <= response.status_code < 500:  # type: ignore[union-attr]
+                logger.error(f"Произошла клиентская ошибка {response.status_code}")
                 return f"Client Error: {response.status_code}"  # type: ignore[union-attr]
 
+    logger.info("итог успешно сформирован")
     return currency_rate
 
 
@@ -209,9 +233,11 @@ def get_stock_price() -> list[dict] | str:
     try:
         api_url = "https://api.api-ninjas.com/v1/sp500"
         headers = {"X-Api-Key": FOUNDATION_API}
+        logger.info("подключение к api-ресурсу для получения актуального состава S&P500")
         response = requests.get(api_url, headers=headers)
         response.raise_for_status()
         result = response.json()
+        logger.info("получение состава индекса")
         for el in result:
             ticker = el["ticker"]
             sector = el["sector"]
@@ -222,28 +248,34 @@ def get_stock_price() -> list[dict] | str:
                 "sector": sector,
             }
 
+            logger.info("подключение к инвестиционному api-ресурсу для получения цены актива из состава индекса")
             if "stock" in data:
                 url = "https://finnhub.io/api/v1/quote"
                 payload = {"token": apiKey, "symbol": ticker}
                 response = requests.get(url, params=payload)
                 response.raise_for_status()
                 result = response.json()
+                logger.info("формирование данных")
                 data_rates = {
-                    "price": result["c"],
-                    "High price of the day": result["h"],
-                    "Low price of the day": result["l"],
-                    "Open price of the day": result["o"],
-                    "Previous close price": result["pc"],
+                    "price": round(result["c"], 2),
+                    "High price of the day": round(result["h"], 2),
+                    "Low price of the day": round(result["l"], 2),
+                    "Open price of the day": round(result["o"], 2),
+                    "Previous close price": round(result["pc"], 2)
                 }
                 data.update(data_rates)
+            logger.info("формирование полных данных")
             activ_rate.append(data)
             if len(activ_rate) > 5:
                 break
 
     except requests.exceptions.HTTPError:
         if 500 <= response.status_code < 600:  # type: ignore[union-attr]
+            logger.error(f"Произошла ошибка сервера")
             return "Server Error"
         elif 400 <= response.status_code < 500:  # type: ignore[union-attr]
+            logger.error(f"Произошла клиентская ошибка {response.status_code}")
             return f"Client Error: {response.status_code}"  # type: ignore[union-attr]
 
+    logger.info("сформирован список из 5 первых активов в т.ч. стоимость в индексе")
     return activ_rate
