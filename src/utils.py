@@ -1,3 +1,4 @@
+# вспомогательные функции основного функционала
 import os
 from datetime import datetime
 

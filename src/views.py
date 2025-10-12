@@ -47,9 +47,6 @@ def greetings(date_time: str) -> str:
 
         json_data = json.dumps(data, ensure_ascii=False, indent=4)
 
-    except Exception as e:
-        logger.error(f"Произошла ошибка {e}")
-        return str(e)
     except JSONDecodeError:
         logger.error(f"Произошла ошибка кодирования ")
         return "ошибка формирования ответа"
