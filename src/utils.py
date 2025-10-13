@@ -6,14 +6,13 @@ from datetime import datetime
 import pandas as pd
 import requests
 
-
-from src.log_config import logger
-
 # noinspection PyUnresolvedReferences
 from dotenv import load_dotenv
 
 # noinspection PyUnresolvedReferences
 from pandas import DataFrame
+
+from src.log_config import logger
 
 load_dotenv()
 CURRENCY_API = os.getenv("API_KEY_CURRENCY")
@@ -23,7 +22,9 @@ apiKey = os.getenv("API_KEY_RATE")
 
 def greet_result() -> str:
     """Приветствие в формате «Доброе утро» / «Добрый день» / «Добрый вечер» / «Доброй ночи»"""
-    logger.info("получение даты и времени пользователя, ее настройка для получения времени")
+    logger.info(
+        "получение даты и времени пользователя, ее настройка для получения времени"
+    )
     now = datetime.now()
     time_form = now.strftime("%H:%M:%S")  # только время
 
@@ -134,7 +135,9 @@ def transactions(sorted_df: DataFrame) -> list[dict]:
         ["Дата платежа", "Сумма операции", "Категория", "Описание"]
     ].sort_values(by="Дата платежа", ascending=False)
 
-    logger.info("определение источника данных для пар ключ-значение списка топ 5 расходов")
+    logger.info(
+        "определение источника данных для пар ключ-значение списка топ 5 расходов"
+    )
     for date, group in transaction_sorted.groupby("Дата платежа"):
         top_5 = group.nlargest(5, "Сумма операции")
         for i, row in top_5.iterrows():
@@ -155,7 +158,8 @@ def transactions(sorted_df: DataFrame) -> list[dict]:
                     "description": row["Описание"],
                 }
 
-            elif ("date" in transaction_data
+            elif (
+                "date" in transaction_data
                 and "category" in transaction_data
                 and "description" in transaction_data
             ):
@@ -176,7 +180,7 @@ def transactions(sorted_df: DataFrame) -> list[dict]:
     return top_transactions
 
 
-def get_currency() -> list[dict] | str:
+def get_currency() -> list[dict] | str:  # type: ignore[return]
     """получает стоимость USD и EUR и формирует список
     [{"currency": "USD",
     "rate": 82.00
@@ -205,8 +209,7 @@ def get_currency() -> list[dict] | str:
                     result["Realtime Currency Exchange Rate"]["5. Exchange Rate"]
                 )
                 logger.info("формирование итога")
-                data = {"currency": currency,
-                        "rate": round(rate, 2)}
+                data = {"currency": currency, "rate": round(rate, 2)}
                 currency_rate.append(data)
 
             logger.info("итог успешно сформирован")
@@ -217,11 +220,11 @@ def get_currency() -> list[dict] | str:
                 logger.error("Произошла ошибка сервера")
                 return "Server Error"
             elif 400 <= response.status_code < 500:  # type: ignore[union-attr]
-                logger.error(f"Произошла клиентская ошибка {response.status_code}")
+                logger.error(f"Произошла клиентская ошибка {response.status_code}")  # type: ignore[union-attr]
                 return f"Client Error: {response.status_code}"  # type: ignore[union-attr]
 
 
-def get_stock_price() -> list[dict] | str:
+def get_stock_price() -> list[dict] | str:  # type: ignore[return]
     """получает список с ценами ценных бумаг в составе фонда ОША и формирует список
     [{"stock": "AAPL",
      "price": 150.12}]"""
@@ -230,7 +233,9 @@ def get_stock_price() -> list[dict] | str:
     try:
         api_url = "https://api.api-ninjas.com/v1/sp500"
         headers = {"X-Api-Key": FOUNDATION_API}
-        logger.info("подключение к api-ресурсу для получения актуального состава S&P500")
+        logger.info(
+            "подключение к api-ресурсу для получения актуального состава S&P500"
+        )
         response = requests.get(api_url, headers=headers)
         response.raise_for_status()
         result = response.json()
@@ -245,7 +250,9 @@ def get_stock_price() -> list[dict] | str:
                 "sector": sector,
             }
 
-            logger.info("подключение к инвестиционному api-ресурсу для получения цены актива из состава индекса")
+            logger.info(
+                "подключение к инвестиционному api-ресурсу для получения цены актива из состава индекса"
+            )
             if "stock" in data:
                 url = "https://finnhub.io/api/v1/quote"
                 payload = {"token": apiKey, "symbol": ticker}
@@ -258,7 +265,7 @@ def get_stock_price() -> list[dict] | str:
                     "High price of the day": round(result["h"], 2),
                     "Low price of the day": round(result["l"], 2),
                     "Open price of the day": round(result["o"], 2),
-                    "Previous close price": round(result["pc"], 2)
+                    "Previous close price": round(result["pc"], 2),
                 }
                 data.update(data_rates)
             logger.info("формирование полных данных")
@@ -271,8 +278,8 @@ def get_stock_price() -> list[dict] | str:
 
     except requests.exceptions.HTTPError:
         if 500 <= response.status_code < 600:  # type: ignore[union-attr]
-            logger.error(f"Произошла ошибка сервера")
+            logger.error("Произошла ошибка сервера")
             return "Server Error"
         elif 400 <= response.status_code < 500:  # type: ignore[union-attr]
-            logger.error(f"Произошла клиентская ошибка {response.status_code}")
+            logger.error(f"Произошла клиентская ошибка {response.status_code}")  # type: ignore[union-attr]
             return f"Client Error: {response.status_code}"  # type: ignore[union-attr]

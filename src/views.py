@@ -1,9 +1,7 @@
 # функции генерации json-ответов
 import json
-
-from json import JSONDecodeError
-
 import logging
+from json import JSONDecodeError
 
 from src.utils import (
     get_card_spent,
@@ -15,10 +13,27 @@ from src.utils import (
     transactions,
 )
 
-
 logger = logging.getLogger("views")
-view_log = ("C","Users", "Я", "Desktop", "ДЛЯ РАБОТЫ", "pythonProject", "course_work", "pythonProject", "course_work", "pythonProject", "logs", "views.log")
-file_handler = logging.FileHandler("C:/Users/Я/Desktop/ДЛЯ РАБОТЫ/pythonProject/course_work/pythonProject/logs/views.log", "w", encoding="utf-8")
+view_log = (
+    "C",
+    "Users",
+    "Я",
+    "Desktop",
+    "ДЛЯ РАБОТЫ",
+    "pythonProject",
+    "course_work",
+    "pythonProject",
+    "course_work",
+    "pythonProject",
+    "logs",
+    "views.log",
+)
+file_handler = logging.FileHandler(
+    "C:/Users/Я/Desktop/ДЛЯ РАБОТЫ/pythonProject/course_work/"
+    "pythonProject/logs/views.log",
+    "w",
+    encoding="utf-8",
+)
 file_formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s")
 file_handler.setFormatter(file_formatter)
 logger.addHandler(file_handler)
@@ -29,7 +44,11 @@ def greetings(date_time: str) -> str:
     """Приветствие пользователя в зависимости от его времени суток"""
     greeting = greet_result()
     time_period = get_date_time(date_time)
-    sorted_df = get_path_period("C:/Users/Я/Desktop/ДЛЯ РАБОТЫ/pythonProject/course_work/pythonProject/data/operations.xlsx", time_period)
+    sorted_df = get_path_period(
+        "C:/Users/Я/Desktop/ДЛЯ РАБОТЫ/pythonProject/course_work/"
+        "pythonProject/data/operations.xlsx",
+        time_period,
+    )
     cards = get_card_spent(sorted_df)
     top_transactions = transactions(sorted_df)
     currency_rates = get_currency()
@@ -50,6 +69,5 @@ def greetings(date_time: str) -> str:
         return json_data
 
     except JSONDecodeError:
-        logger.error(f"Произошла ошибка кодирования ")
+        logger.error("Произошла ошибка кодирования ")
         return "ошибка формирования ответа"
-
