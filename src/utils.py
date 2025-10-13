@@ -212,9 +212,6 @@ def get_currency() -> list[dict] | str:
             logger.info("итог успешно сформирован")
             return currency_rate
 
-        except Exception as e:
-            logger.error(f"Произошла ошибка {e}")
-            return str(e)
         except requests.exceptions.HTTPError:
             if 500 <= response.status_code < 600:  # type: ignore[union-attr]
                 logger.error("Произошла ошибка сервера")
@@ -222,7 +219,6 @@ def get_currency() -> list[dict] | str:
             elif 400 <= response.status_code < 500:  # type: ignore[union-attr]
                 logger.error(f"Произошла клиентская ошибка {response.status_code}")
                 return f"Client Error: {response.status_code}"  # type: ignore[union-attr]
-
 
 
 def get_stock_price() -> list[dict] | str:
@@ -280,4 +276,3 @@ def get_stock_price() -> list[dict] | str:
         elif 400 <= response.status_code < 500:  # type: ignore[union-attr]
             logger.error(f"Произошла клиентская ошибка {response.status_code}")
             return f"Client Error: {response.status_code}"  # type: ignore[union-attr]
-
