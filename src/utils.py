@@ -155,8 +155,7 @@ def transactions(sorted_df: DataFrame) -> list[dict]:
                     "description": row["Описание"],
                 }
 
-            elif (
-                "date" in transaction_data
+            elif ("date" in transaction_data
                 and "category" in transaction_data
                 and "description" in transaction_data
             ):
@@ -210,6 +209,9 @@ def get_currency() -> list[dict] | str:
                         "rate": round(rate, 2)}
                 currency_rate.append(data)
 
+            logger.info("итог успешно сформирован")
+            return currency_rate
+
         except Exception as e:
             logger.error(f"Произошла ошибка {e}")
             return str(e)
@@ -221,8 +223,6 @@ def get_currency() -> list[dict] | str:
                 logger.error(f"Произошла клиентская ошибка {response.status_code}")
                 return f"Client Error: {response.status_code}"  # type: ignore[union-attr]
 
-    logger.info("итог успешно сформирован")
-    return currency_rate
 
 
 def get_stock_price() -> list[dict] | str:
@@ -270,6 +270,9 @@ def get_stock_price() -> list[dict] | str:
             if len(activ_rate) > 5:
                 break
 
+        logger.info("сформирован список из 5 первых активов в т.ч. стоимость в индексе")
+        return activ_rate
+
     except requests.exceptions.HTTPError:
         if 500 <= response.status_code < 600:  # type: ignore[union-attr]
             logger.error(f"Произошла ошибка сервера")
@@ -278,5 +281,3 @@ def get_stock_price() -> list[dict] | str:
             logger.error(f"Произошла клиентская ошибка {response.status_code}")
             return f"Client Error: {response.status_code}"  # type: ignore[union-attr]
 
-    logger.info("сформирован список из 5 первых активов в т.ч. стоимость в индексе")
-    return activ_rate
