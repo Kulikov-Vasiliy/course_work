@@ -14,25 +14,14 @@ from src.utils import (
 )
 
 logger = logging.getLogger("views")
-view_log = (
-    "C",
-    "Users",
-    "Я",
-    "Desktop",
-    "ДЛЯ РАБОТЫ",
-    "pythonProject",
-    "course_work",
-    "pythonProject",
-    "course_work",
-    "pythonProject",
-    "logs",
-    "views.log",
+log = (
+    "C", "Users", "Я", "Desktop", "ДЛЯ РАБОТЫ",
+    "pythonProject", "course_work", "pythonProject",
+    "course_work", "pythonProject", "logs", "views.log",
 )
 file_handler = logging.FileHandler(
     "C:/Users/Я/Desktop/ДЛЯ РАБОТЫ/pythonProject/course_work/"
-    "pythonProject/logs/views.log",
-    "w",
-    encoding="utf-8",
+    "pythonProject/logs/views.log","w", encoding="utf-8",
 )
 file_formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s")
 file_handler.setFormatter(file_formatter)
