@@ -4,7 +4,6 @@ from src.views import greetings
 from json import JSONDecodeError
 import logging
 
-from tests.conftest import greet_night
 
 
 @pytest.fixture(autouse=True)
