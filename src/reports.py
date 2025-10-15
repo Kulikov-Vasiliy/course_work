@@ -1,6 +1,7 @@
 import datetime
 
 import logging
+from os import write
 
 from typing import Optional
 
@@ -92,6 +93,7 @@ def spending_by_category(transactions: pd.DataFrame,
        return decorator
 
 
-@spending_by_category(transactions=file_path_param, category, date)
+@spending_by_category(transactions=file_path_param, category="Аптеки", date="2021-12-30 08:16:00")
 def categories(transactions, category , date):
-    print(category)
+    open("C:/Users/Я/Desktop/ДЛЯ РАБОТЫ/pythonProject/course_work/"
+        "pythonProject/data/transactions.xlsx", "r", encoding="utf-8")
