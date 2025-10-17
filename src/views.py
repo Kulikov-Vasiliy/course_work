@@ -58,5 +58,5 @@ def greetings(date_time: str) -> str:
         return json_data
 
     except JSONDecodeError:
-        logger.error("Произошла ошибка кодирования ")
+        logger.error("Произошла ошибка кодирования")
         return "ошибка формирования ответа"
