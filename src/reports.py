@@ -3,6 +3,7 @@ import datetime
 import logging
 
 import numpy as np
+
 from dateutil.relativedelta import relativedelta
 
 from typing import Optional
@@ -67,15 +68,17 @@ def spending_by_category(transactions: pd.DataFrame,
 
             logger.info("получение точки начала периода")
             if filtered_data["Дата операции"].dt.day.isin(day).any():
+                dt = pd.to_datetime(date)
+                tree_months_ago = dt - relativedelta(months=3)
                 filtered_data_start = df[
-                    df["Дата операции"].apply(lambda x: x - relativedelta(months=3)).dt.month
+                    df["Дата операции"].apply(lambda x: x >= tree_months_ago)
                     & (df["Дата операции"].dt.day == day)
                     ]
             else:
                 month_offset = datetime.datetime.today() - relativedelta(months=3)
                 current_day = datetime.datetime.today()
                 filtered_data_start = df[
-                    df["Дата операции"].apply(lambda x: month_offset.month)
+                    df["Дата операции"].apply(lambda x: x >= month_offset.month)
                     & (df["Дата операции"].dt.day == current_day)
                     ]
 
@@ -91,13 +94,16 @@ def spending_by_category(transactions: pd.DataFrame,
                     "Номер карты",
                     "Статус",
                     "Сумма операции",
-                    "Кэшбэк" if "Кэшбэк" else abs(filter_result["Сумма операции"]) // 100,
+                    "Кэшбэк",
                     "MCC",
                     "Категория",
                     "Описание",
                     "Округление на инвесткопилку",
-                    "Бонусы (включая кэшбэк)" if "Бонусы (включая кэшбэк)" else abs(filter_result["Сумма операции"]) // 100,
+                    "Бонусы (включая кэшбэк)",
                     ]]
+            filter_result["Номер карты"] = filter_result["Номер карты"].apply(lambda x: x.strip() if isinstance(x, str) else x)
+            filter_result["Кэшбэк"] = filter_result["Кэшбэк"].fillna(abs(filter_result["Сумма операции"]) / 100)
+            filter_result["Бонусы (включая кэшбэк)"] = filter_result["Бонусы (включая кэшбэк)"].fillna(abs(filter_result["Сумма операции"]) / 100)
             resulted_cleaned = resulted.replace([np.inf, -np.inf], np.nan).fillna(0)
 
             logger.info("формирование файла")
