@@ -101,9 +101,14 @@ def spending_by_category(transactions: pd.DataFrame,
                     "Округление на инвесткопилку",
                     "Бонусы (включая кэшбэк)",
                     ]]
-            filter_result["Номер карты"] = filter_result["Номер карты"].apply(lambda x: x.strip() if isinstance(x, str) else x)
-            filter_result["Кэшбэк"] = filter_result["Кэшбэк"].fillna(abs(filter_result["Сумма операции"]) / 100)
-            filter_result["Бонусы (включая кэшбэк)"] = filter_result["Бонусы (включая кэшбэк)"].fillna(abs(filter_result["Сумма операции"]) / 100)
+            resulted = resulted.copy()
+            resulted["Номер карты"] = resulted["Номер карты"].apply(lambda x: x.replace('*', '') if isinstance(x, str) else x)
+            resulted["Кэшбэк"] = resulted["Кэшбэк"].fillna(round(abs(resulted["Сумма операции"]) / 100), 2)
+            resulted["Бонусы (включая кэшбэк)"] = np.where(
+                resulted["Бонусы (включая кэшбэк)"].isna(),
+                round(abs(resulted["Сумма операции"]) / 100, 2),  # Если NaN, присваиваем новое значение
+                round(resulted["Бонусы (включая кэшбэк)"] + abs(resulted["Сумма операции"]) / 100, 2) # Иначе, складываем
+            )
             resulted_cleaned = resulted.replace([np.inf, -np.inf], np.nan).fillna(0)
 
             logger.info("формирование файла")
@@ -133,4 +138,3 @@ def spending_by_category(transactions: pd.DataFrame,
 @spending_by_category(file_path_param, "Аптеки", "2021-12-30 08:16:00")
 def categories(transactions=file_path_param, category="Аптеки", date="2021-12-30 08:16:00"):
     print('готово')
-    return "готово"
