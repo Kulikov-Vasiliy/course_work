@@ -1,5 +1,12 @@
 import pytest
+
 import pandas as pd
+
+import xlsxwriter
+
+import openpyxl
+
+from pathlib import Path
 
 
 @pytest.fixture
@@ -681,3 +688,39 @@ def categories():
     "Красота": 3.0,
     "Рестораны": 0.6
 }
+
+
+# Фикстура, которая предоставляет путь к временному файлу для каждого теста.
+@pytest.fixture
+def workbook_path(tmp_path: Path):
+    return tmp_path / "test_output.xlsx"
+
+
+# Фикстура, которая создаёт и закрывает рабочую книгу.
+@pytest.fixture
+def test_workbook(workbook_path: Path):
+    workbook = xlsxwriter.Workbook(workbook_path)
+    worksheet = workbook.add_worksheet()
+    worksheet.write(0, 0, "Дата платежа")
+    worksheet.write(1, 0, "27.12.2021")
+    worksheet.write(0, 1, "Номер карты")
+    worksheet.write(1, 1, 5091)
+    worksheet.write(0, 2, "Статус")
+    worksheet.write(1, 2, "OK")
+    worksheet.write(0, 3, "Сумма операции")
+    worksheet.write(1, 3, -123)
+    worksheet.write(0, 4, "Кэшбэк")
+    worksheet.write(1, 4, 1.23)
+    worksheet.write(0, 5, "MCC")
+    worksheet.write(1, 5, 5912)
+    worksheet.write(0, 6, "Категория")
+    worksheet.write(1, 6, "Аптеки")
+    worksheet.write(0, 7, "Описание")
+    worksheet.write(1, 7, "Apteka 23")
+    worksheet.write(0, 8, "Округление на инвесткопилку")
+    worksheet.write(1, 8, 0)
+    worksheet.write(0, 9, "Бонусы (включая кэшбэк)")
+    worksheet.write(1, 9, 2.23)
+
+    workbook.close()
+    return workbook_path

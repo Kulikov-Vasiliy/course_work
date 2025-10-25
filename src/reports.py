@@ -103,7 +103,7 @@ def spending_by_category(transactions: pd.DataFrame,
                     ]]
             resulted = resulted.copy()
             resulted["Номер карты"] = resulted["Номер карты"].apply(lambda x: x.replace('*', '') if isinstance(x, str) else x)
-            resulted["Кэшбэк"] = resulted["Кэшбэк"].fillna(round(abs(resulted["Сумма операции"]) / 100), 2)
+            resulted["Кэшбэк"] = resulted["Кэшбэк"].fillna(round(abs(resulted["Сумма операции"]) / 100, 2))
             resulted["Бонусы (включая кэшбэк)"] = np.where(
                 resulted["Бонусы (включая кэшбэк)"].isna(),
                 round(abs(resulted["Сумма операции"]) / 100, 2),  # Если NaN, присваиваем новое значение
