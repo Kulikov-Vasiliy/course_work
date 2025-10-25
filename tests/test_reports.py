@@ -5,6 +5,7 @@ import pandas as pd
 from src.reports import spending_by_category
 import logging
 import openpyxl
+from pandas.testing import assert_frame_equal
 from datetime import datetime
 
 
@@ -81,6 +82,14 @@ resulted = {
     }
 expected_df = pd.DataFrame(resulted)
 
+
+def test_dataframe_manipulation():
+    input_df = MOCK_DF
+    expected_output_df = expected_df
+
+    actual_output_df = spending_by_category(input_df, "Одежда", '2025-08-15 12:00:00')
+
+    assert_frame_equal(actual_output_df, expected_output_df)
 #
 # @patch('pandas.read_excel', return_value=MOCK_DF)
 # @patch('xlsxwriter.Workbook')
