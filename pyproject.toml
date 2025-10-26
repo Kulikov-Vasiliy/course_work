@@ -13,7 +13,8 @@ dependencies = [
     "mocker (>=1.1.1,<2.0.0)",
     "pytest (>=8.4.2,<9.0.0)",
     "pyexcelerate (>=0.13.0,<0.14.0)",
-    "xlsxwriter (>=3.2.9,<4.0.0)"
+    "xlsxwriter (>=3.2.9,<4.0.0)",
+    "freezegun (>=1.5.5,<2.0.0)"
 ]
 
 

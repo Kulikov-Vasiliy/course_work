@@ -68,7 +68,8 @@ def spending_by_category(transactions: pd.DataFrame,
 
             logger.info("получение точки начала периода")
             if filtered_data["Дата операции"].dt.day.isin(day).any():
-                dt = pd.to_datetime(date)
+                idx = filtered_data["Дата операции"].first_valid_index()
+                dt = filtered_data.at[idx, "Дата операции"]
                 tree_months_ago = dt - relativedelta(months=3)
                 filtered_data_start = df[
                     df["Дата операции"].apply(lambda x: x >= tree_months_ago)
