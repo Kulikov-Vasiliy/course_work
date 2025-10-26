@@ -138,4 +138,4 @@ def spending_by_category(transactions: pd.DataFrame,
 
 @spending_by_category(file_path_param, "Аптеки", "2021-12-30 08:16:00")
 def categories(transactions=file_path_param, category="Аптеки", date="2021-12-30 08:16:00"):
-    print('готово')
+    print('В data сформирован файл с результатом')
