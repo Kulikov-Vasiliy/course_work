@@ -2,7 +2,7 @@ import pytest
 import logging
 from json import JSONDecodeError
 
-from src.services import analyze_cashback, file_path_param
+from src.services import analyze_cashback, file_path_param_s
 
 
 @pytest.fixture(autouse=True)
@@ -32,12 +32,12 @@ def test_analyze_cashback_success(mocker, categories):
     "Красота": 3.0,
     "Рестораны": 0.6
     })
-    result = analyze_cashback(file_path_param, 2021, 5)
+    result = analyze_cashback(file_path_param_s, 2021, 5)
     assert result == categories
 
 
 def test_analyze_cashback_decode_err(mocker):
     error_instance = JSONDecodeError("msg", "doc", 0)
     mocker.patch("json.dumps", side_effect=error_instance)
-    result = analyze_cashback(file_path_param, 2021, 5)
+    result = analyze_cashback(file_path_param_s, 2021, 5)
     assert result == "ошибка формирования ответа"

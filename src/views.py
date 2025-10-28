@@ -15,13 +15,14 @@ from src.utils import (
 
 logger = logging.getLogger("views")
 log = (
-    "C", "Users", "Я", "Desktop", "ДЛЯ РАБОТЫ",
-    "pythonProject", "course_work", "pythonProject",
-    "course_work", "pythonProject", "logs", "views.log",
+    "..",
+    "logs",
+    "views.log",
 )
 file_handler = logging.FileHandler(
-    "C:/Users/Я/Desktop/ДЛЯ РАБОТЫ/pythonProject/course_work/"
-    "pythonProject/logs/views.log","w", encoding="utf-8",
+    "../logs/views.log",
+    "w",
+    encoding="utf-8",
 )
 file_formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s")
 file_handler.setFormatter(file_formatter)
@@ -34,8 +35,7 @@ def greetings(date_time: str) -> str:
     greeting = greet_result()
     time_period = get_date_time(date_time)
     sorted_df = get_path_period(
-        "C:/Users/Я/Desktop/ДЛЯ РАБОТЫ/pythonProject/course_work/"
-        "pythonProject/data/operations.xlsx",
+        "C:/Users/Я/Desktop/ДЛЯ РАБОТЫ/pythonProject/course_work/" "pythonProject/data/operations.xlsx",
         time_period,
     )
     cards = get_card_spent(sorted_df)
