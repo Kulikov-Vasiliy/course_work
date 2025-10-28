@@ -3,20 +3,17 @@ import json
 import logging
 import math
 from json import JSONDecodeError
+import os
 
 import pandas as pd
 
-file_path_param_s = "../data/operations.xlsx"
+file_path_param_s = os.path.join(os.path.dirname(__file__),"../data/operations.xlsx")
 
 
-logger = logging.getLogger("views")
-log = (
-    "..",
-    "logs",
-    "services.log",
-)
+logger = logging.getLogger("services")
+log = os.path.join(os.path.dirname(__file__),'..', 'logs', 'services.log')
 file_handler = logging.FileHandler(
-    "../logs/servises.log",
+    os.path.join(os.path.dirname(__file__),"../logs/services.log"),
     "w",
     encoding="utf-8",
 )

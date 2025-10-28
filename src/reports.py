@@ -1,23 +1,21 @@
 import datetime
 import logging
 from typing import Optional
+import os
 
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 import xlsxwriter  # type: ignore[import-untyped]
 from dateutil.relativedelta import relativedelta
 
-file_path_param_r = "../data/operations.xlsx"
+
+file_path_param_r = os.path.join(os.path.dirname(__file__),"../data/operations.xlsx")
 
 
 logger = logging.getLogger("reports")
-log = (
-    "..",
-    "logs",
-    "reports.log",
-)
+log = os.path.join(os.path.dirname(__file__),'..', 'logs', 'reports.log')
 file_handler = logging.FileHandler(
-    "../logs/reports.log",
+    os.path.join(os.path.dirname(__file__),"../logs/reports.log"),
     "w",
     encoding="utf-8",
 )
@@ -95,6 +93,22 @@ def spending_by_category(transactions: pd.DataFrame, category: str, date: Option
             )  # Иначе, складываем
             resulted.replace([np.inf, -np.inf], np.nan).fillna(0)
 
+            logger.info("формирование файла")
+            workbook = xlsxwriter.Workbook("../data/transactions.xlsx")
+            worksheet = workbook.add_worksheet()
+            for col_num, col_data in enumerate(resulted.columns):
+                worksheet.set_column(col_num, col_num, 50)
+
+            # Запись заголовков
+            for col_num, col_name in enumerate(resulted.columns):
+                worksheet.write(0, col_num, col_name)
+
+            # Запись данных
+            for row_num, row_data in enumerate(resulted.values):
+                worksheet.write_row(row_num + 1, 0, row_data)
+
+            workbook.close()
+
             return result
 
         return wrapper
@@ -107,23 +121,8 @@ def spending_by_category(transactions: pd.DataFrame, category: str, date: Option
     category="Аптеки",
     date="2021-12-30 08:16:00",
 )
-def categories(transactions, category, date):  # type: ignore[no-untyped-def]
+def categories(transactions: pd.DataFrame, category: str, date: Optional[str]=None):  # type: ignore[no-untyped-def]
 
-    logger.info("формирование файла")
-    workbook = xlsxwriter.Workbook("../data/transactions.xlsx")
-    worksheet = workbook.add_worksheet()
-    for col_num, col_data in enumerate(resulted.columns):
-        worksheet.set_column(col_num, col_num, 50)
-
-    # Запись заголовков
-    for col_num, col_name in enumerate(resulted.columns):
-        worksheet.write(0, col_num, col_name)
-
-    # Запись данных
-    for row_num, row_data in enumerate(resulted.values):
-        worksheet.write_row(row_num + 1, 0, row_data)
-
-    workbook.close()
     print("В data сформирован файл с результатом")
 
 
