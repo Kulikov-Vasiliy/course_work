@@ -1,22 +1,18 @@
 from pathlib import Path
-
-from unittest.mock import patch
+from unittest.mock import MagicMock,patch
+import xlsxwriter
+import os
 
 import pytest
 
 import pandas as pd
 
-from src.reports import spending_by_category
-
-from freezegun import freeze_time
+from src.reports import spending_by_category, categories, file_path_param_r, save_to_file
+from pandas.testing import assert_frame_equal
 
 import logging
 
 import openpyxl
-
-import os
-
-from datetime import datetime
 
 
 @pytest.fixture(autouse=True)
@@ -24,103 +20,140 @@ def disable_logging():
     logging.disable(logging.CRITICAL)
 
 
-def test_workbook_creation(test_workbook: Path):
+def test_categories(test_workbook: Path):
     assert test_workbook.exists()
 
 
-def test_workbook_content(test_workbook: Path):
+def test_categories_content(test_workbook: Path):
     wb = openpyxl.load_workbook(test_workbook)
     sheet = wb.active
 
     # Проверяем содержимое ячеек
-    assert sheet['A1'].value == "Дата платежа"
-    assert sheet['A2'].value == "27.12.2021"
-    assert sheet['B1'].value == "Номер карты"
-    assert sheet['B2'].value == 5091
-    assert sheet['C1'].value == "Статус"
-    assert sheet['C2'].value == "OK"
-    assert sheet['D1'].value == "Сумма операции"
-    assert sheet['D2'].value == -123
-    assert sheet['E1'].value == "Кэшбэк"
-    assert sheet['E2'].value == 1.23
-    assert sheet['F1'].value == "MCC"
-    assert sheet['F2'].value == 5912
-    assert sheet['G1'].value == "Категория"
-    assert sheet['G2'].value == "Аптеки"
-    assert sheet['H1'].value == "Описание"
-    assert sheet['H2'].value == "Apteka 23"
-    assert sheet['I1'].value == "Округление на инвесткопилку"
-    assert sheet['I2'].value == 0
-    assert sheet['J1'].value == "Бонусы (включая кэшбэк)"
-    assert sheet['J2'].value == 2.23
+    assert sheet["A1"].value == "Дата платежа"
+    assert sheet["A2"].value == "27.12.2021"
+    assert sheet["B1"].value == "Номер карты"
+    assert sheet["B2"].value == 5091
+    assert sheet["C1"].value == "Статус"
+    assert sheet["C2"].value == "OK"
+    assert sheet["D1"].value == "Сумма операции"
+    assert sheet["D2"].value == -123
+    assert sheet["E1"].value == "Кэшбэк"
+    assert sheet["E2"].value == 1.23
+    assert sheet["F1"].value == "MCC"
+    assert sheet["F2"].value == 5912
+    assert sheet["G1"].value == "Категория"
+    assert sheet["G2"].value == "Аптеки"
+    assert sheet["H1"].value == "Описание"
+    assert sheet["H2"].value == "Apteka 23"
+    assert sheet["I1"].value == "Округление на инвесткопилку"
+    assert sheet["I2"].value == 0
+    assert sheet["J1"].value == "Бонусы (включая кэшбэк)"
+    assert sheet["J2"].value == 2.23
 
     wb.close()
 
 
-MOCK_DATA = {
-    'Дата операции': ['2025-09-01 10:00:00', '2025-08-15 12:00:00', '2025-09-20 15:30:00', '2025-06-01 09:00:00'],
-    'Дата платежа': ['01.09.2025', '15.08.2025', '20.09.2025', '01.06.2025'],
-    'Номер карты': ['*1234', '*5678', '*1234', '*1234'],
-    'Статус': ['OK', 'OK', 'OK', 'OK'],
-    'Сумма операции': [-100.0, -50.0, -200.0, -30.0],
-    'Валюта операции': ['RUB', 'RUB', 'RUB', 'RUB'],
-    'Сумма платежа': [-100.0, -50.0, -200.0, -30.0],
-    'Валюта платежа': ['RUB', 'RUB', 'RUB', 'RUB'],
-    'Кэшбэк': [None, 2.5, None, 1.0],
-    'Категория': ['Еда', 'Одежда', 'Еда', 'Еда'],
-    'MCC': [111, 222, 111, 111],
-    'Описание': ['Кафе', 'Магазин', 'Ресторан', 'Магазин'],
-    'Бонусы (включая кэшбэк)': [None, 2.5, 2.0, 1.0],
-    'Округление на инвесткопилку': [0, 0, 0, 0],
-    'Сумма операции с округлением': [100.0, 50.0, 200.0, 30.0]
-    }
-MOCK_DF = pd.DataFrame(MOCK_DATA)
-MOCK_DF['Дата операции'] = pd.to_datetime(MOCK_DF['Дата операции'])
+def test_spending_by_category(mocker, spends):
+    mocker.patch(
+        "pandas.DataFrame",
+        return_value=pd.DataFrame(
+            {
+                "Дата платежа": ["27.12.2021"],
+                "Номер карты": [5091],
+                "Статус": ["OK"],
+                "Сумма операции": [-123],
+                "Кэшбэк": [1.23],
+                "MCC": [5912],
+                "Категория": ["Аптеки"],
+                "Описание": ["Apteka 23"],
+                "Округление на инвесткопилку": [0],
+                "Бонусы (включая кэшбэк)": [2.23],
+            }
+        ),
+    )
+    transactions = pd.read_excel(file_path_param_r, sheet_name="Отчет по операциям")
+    result = spending_by_category(transactions, "Аптеки", "2021-12-30 08:16:00")
+    assert_frame_equal(result, spends)
 
-# модуль на переделке, после- обновлять тесты
-# @freeze_time("2025-09-25")
-# def test_spending_by_category_with_freezegun():
-#     # Создаем тестовый DataFrame
-#     test_data = {
-#         'Дата операции': [
-#             datetime(2025, 9, 20),
-#             datetime(2025, 8, 25),
-#             datetime(2025, 6, 20),
-#             datetime(2025, 5, 25)
-#         ],
-#         'Категория': ['Еда', 'Еда', 'Еда', 'Еда'],
-#         'Сумма операции': [-100, -50, -30, -20]
-#     }
-#     df = pd.DataFrame(test_data)
-#
-#     # Применяем декоратор
-#     @spending_by_category(transactions=df, category='Еда')
-#     def decorated_function():
-#         pass
-#
-#     # Запускаем тест
-#     decorated_function()
-#
-#
-# @patch('pandas.read_excel', return_value=MOCK_DF)
-# @patch('xlsxwriter.Workbook')
-# @patch('src.reports.datetime')
-# def test_spending_by_category_decorator_logic(mock_datetime, mock_workbook, mock_read_excel):
-#     # Мокируем текущую дату
-#     mock_datetime.today.return_value = datetime(2025, 9, 25)
-#
-#     # Функция, которую будет оборачивать декоратор
-#     @spending_by_category(transactions=None, category='Одежда', date='2025-09-25 00:00:00')
-#     def decorated_function():
-#         return "Исходный результат"
-#
-#     # Вызываем декорированную функцию
-#     result = decorated_function()
-#
-#     # Проверяем, что pandas.read_excel был вызван
-#     mock_read_excel.assert_called_once()
-#
-#     mock_workbook.assert_called_once_with(os.path.join(os.path.dirname(__file__),"../data/operations.xlsx"))
-#
-#     # Проверка того, что исходный результат возвращается
-#     assert result == "Исходный результат"
+
+# Создаем фикстуру для mock-объекта DataFrame, который будет возвращать spending_by_category
+@pytest.fixture
+def mock_dataframe():
+    """Возвращает mock-объект DataFrame с тестовыми данными."""
+    data = {
+        "col1": [1, 2],
+        "col2": ["A", "B"]
+    }
+    df = pd.DataFrame(data)
+    # Добавляем атрибут `columns` для имитации DataFrame
+    df.columns = ["col1", "col2"]
+    return df
+
+
+@patch("src.reports.spending_by_category")
+def test_save_to_file_creates_and_writes_file(mock_spending_by_category, mock_dataframe, tmp_path):
+    """
+    Тестирует, что декоратор save_to_file корректно записывает данные в файл.
+    """
+    mock_spending_by_category.return_value = mock_dataframe
+
+    # Создаем путь к временному файлу
+    test_file_path = tmp_path / "test_result.xlsx"
+
+    # Декорируем временную функцию нашим декоратором
+    @save_to_file(filename=test_file_path)
+    def dummy_func(*args, **kwargs):
+        pass
+
+    dummy_func(transactions=None)  # Передаем transactions, но mock его игнорирует
+
+    # Проверяем, что файл был создан
+    assert os.path.exists(test_file_path)
+
+    # Проверяем, что mock-функция была вызвана
+    mock_spending_by_category.assert_called_once()
+
+    # Проверяем содержимое файла (можно прочитать его и убедиться, что оно верное)
+    # Это интеграционная проверка. Для юнит-теста можно было бы просто проверить вызовы xlsxwriter.
+    read_df = pd.read_excel(test_file_path)
+    pd.testing.assert_frame_equal(read_df, mock_dataframe)
+
+
+@patch("src.reports.xlsxwriter")
+@patch("src.reports.spending_by_category")
+def test_save_to_file_handles_exception(mock_spending_by_category, mock_xlsxwriter, tmp_path, caplog):
+    """
+    Тестирует, что декоратор обрабатывает исключение при записи в файл.
+    """
+    # 1. Настройка моков
+    mock_spending_by_category.return_value = pd.DataFrame()
+
+    # Заставляем xlsxwriter.Workbook выбросить исключение при создании
+    mock_workbook_constructor = MagicMock()
+    mock_workbook_constructor.side_effect = xlsxwriter.exceptions.XlsxWriterException("Test Error")
+    mock_xlsxwriter.Workbook = mock_workbook_constructor
+
+    # 2. Декорируем и вызываем функцию
+    test_file_path = tmp_path / "test_result.xlsx"
+
+    @save_to_file(filename=test_file_path)
+    def dummy_func(*args, **kwargs):
+        pass
+
+    # Проверяем, что файл не был создан
+    assert not os.path.exists(test_file_path)
+
+
+def test_categories_function_behavior(capsys):
+    """
+    Тестирует, что функция categories корректно выводит сообщение в консоль.
+    """
+    # Вызываем декорируемую функцию, чтобы проверить её собственный вывод
+    transactions = pd.read_excel(file_path_param_r, sheet_name="Отчет по операциям")
+    categories(transactions, category="Аптека", date="2021-01-01 08:06:00")
+
+    # Захватываем стандартный вывод
+    captured = capsys.readouterr()
+
+    # Проверяем, что ожидаемое сообщение было напечатано
+    assert "В data сформирован файл с результатом" in captured.out

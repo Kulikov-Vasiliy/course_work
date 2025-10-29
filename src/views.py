@@ -1,8 +1,8 @@
 # функции генерации json-ответов
 import json
 import logging
-from json import JSONDecodeError
 import os
+from json import JSONDecodeError
 
 from src.utils import (
     get_card_spent,
@@ -15,9 +15,9 @@ from src.utils import (
 )
 
 logger = logging.getLogger("views")
-log = os.path.join(os.path.dirname(__file__),'..', 'logs', 'views.log')
+log = os.path.join(os.path.dirname(__file__), "..", "logs", "views.log")
 file_handler = logging.FileHandler(
-    os.path.join(os.path.dirname(__file__),"../logs/views.log"),
+    os.path.join(os.path.dirname(__file__), "../logs/views.log"),
     "w",
     encoding="utf-8",
 )
@@ -32,7 +32,7 @@ def greetings(date_time: str) -> str:
     greeting = greet_result()
     time_period = get_date_time(date_time)
     sorted_df = get_path_period(
-        os.path.join(os.path.dirname(__file__),"../data/operations.xlsx"),
+        os.path.join(os.path.dirname(__file__), "../data/operations.xlsx"),
         time_period,
     )
     cards = get_card_spent(sorted_df)

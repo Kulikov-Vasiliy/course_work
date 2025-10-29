@@ -2,9 +2,9 @@ import logging
 import os
 
 logger = logging.getLogger("utils")
-log = os.path.join(os.path.dirname(__file__),'..', 'logs', 'utils.log')
+log = os.path.join(os.path.dirname(__file__), "..", "logs", "utils.log")
 file_handler = logging.FileHandler(
-    os.path.join(os.path.dirname(__file__),"../logs/utils.log"),
+    os.path.join(os.path.dirname(__file__), "../logs/utils.log"),
     "w",
     encoding="utf-8",
 )

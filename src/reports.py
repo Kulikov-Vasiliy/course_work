@@ -1,21 +1,20 @@
 import datetime
 import logging
-from typing import Optional
 import os
+from typing import Optional
 
 import numpy as np
 import pandas as pd  # type: ignore[import-untyped]
 import xlsxwriter  # type: ignore[import-untyped]
 from dateutil.relativedelta import relativedelta
 
-
-file_path_param_r = os.path.join(os.path.dirname(__file__),"../data/operations.xlsx")
+file_path_param_r = os.path.join(os.path.dirname(__file__), "../data/operations.xlsx")
 
 
 logger = logging.getLogger("reports")
-log = os.path.join(os.path.dirname(__file__),'..', 'logs', 'reports.log')
+log = os.path.join(os.path.dirname(__file__), "..", "logs", "reports.log")
 file_handler = logging.FileHandler(
-    os.path.join(os.path.dirname(__file__),"../logs/reports.log"),
+    os.path.join(os.path.dirname(__file__), "../logs/reports.log"),
     "w",
     encoding="utf-8",
 )
@@ -28,104 +27,107 @@ logger.setLevel(logging.INFO)
 def spending_by_category(transactions: pd.DataFrame, category: str, date: Optional[str] = None) -> pd.DataFrame:
     """возвращает расходы по выбранной категории
     за 3 последних месяца от заданного/текущего"""
-    def decorator(func):  # type: ignore[no-untyped-def]
-        def wrapper(*args, **kwargs):  # type: ignore[no-untyped-def]
-            result = func(*args, **kwargs)
-            transactions["Дата операции"] = pd.to_datetime(transactions["Дата операции"], format="%d.%m.%Y %H:%M:%S")
-            logger.info("фильтрация дат и очистка категорий от пустых значений")
-            day = transactions["Дата операции"].dt.day
-            month = transactions["Дата операции"].dt.month
-            filtered_data = transactions[
-                (transactions["Дата операции"].dt.month == month) & (transactions["Дата операции"].dt.day == day)
-            ]
-            filtered_data = filtered_data.dropna(subset=["Категория"])
+    transactions["Дата операции"] = pd.to_datetime(transactions["Дата операции"], format="%d.%m.%Y %H:%M:%S")
+    logger.info("фильтрация дат и очистка категорий от пустых значений")
+    day = transactions["Дата операции"].dt.day
+    month = transactions["Дата операции"].dt.month
+    filtered_data = transactions[
+        (transactions["Дата операции"].dt.month == month) & (transactions["Дата операции"].dt.day == day)
+    ]
+    filtered_data = filtered_data.dropna(subset=["Категория"])
 
-            logger.info("получение точки начала периода")
-            if filtered_data["Дата операции"].dt.day.isin(day).any():
-                specific_date = pd.to_datetime(date).date()
-                three_months_ago = specific_date  - relativedelta(months=3)
-                filtered_data_start = transactions[
-                    (transactions["Дата операции"].dt.date >= three_months_ago) &
-                    (transactions["Дата операции"].dt.date <= specific_date)
-                    ]
+    logger.info("получение точки начала периода")
+    if filtered_data["Дата операции"].dt.day.isin(day).any():
+        specific_date = pd.to_datetime(str(date)).date()
+        three_months_ago = specific_date - relativedelta(months=3)
+        filtered_data_start = transactions[
+            (transactions["Дата операции"].dt.date >= three_months_ago)
+            & (transactions["Дата операции"].dt.date <= specific_date)
+        ]
 
-            else:
-                month_offset = datetime.datetime.today() - relativedelta(months=3)
-                current_day = datetime.datetime.today()
-                filtered_data_start = transactions[
-                    transactions["Дата операции"].apply(lambda x: x >= month_offset.month)
-                    & (transactions["Дата операции"].dt.day == current_day)
-                ]
+    else:
+        month_offset = datetime.datetime.today() - relativedelta(months=3)
+        current_day = datetime.datetime.today()
+        filtered_data_start = transactions[
+            transactions["Дата операции"].apply(lambda x: x >= month_offset.month)
+            & (transactions["Дата операции"].dt.day == current_day)
+        ]
 
-            logger.info("подбор необходимых данных")
-            filter_result = filtered_data_start[
-                filtered_data_start.notna().any(axis=1)  # Проверка на ненулевые значения во всех колонках
-                & (filtered_data_start["Сумма операции"] < 0)  # Сумма операции отрицательна
-                & (filtered_data_start["Категория"] == category)  # Категория равна заданной
-            ]
-            filter_result = filter_result.copy()
-            resulted = filter_result[
-                [
-                    "Дата платежа",
-                    "Номер карты",
-                    "Статус",
-                    "Сумма операции",
-                    "Кэшбэк",
-                    "MCC",
-                    "Категория",
-                    "Описание",
-                    "Округление на инвесткопилку",
-                    "Бонусы (включая кэшбэк)",
-                ]
-            ]
-            resulted = resulted.copy()
-            resulted["Номер карты"] = resulted["Номер карты"].apply(
-                lambda x: x.replace("*", "") if isinstance(x, str) else x
-            )
-            resulted["Кэшбэк"] = resulted["Кэшбэк"].fillna(round(abs(resulted["Сумма операции"]) / 100, 2))
-            resulted["Бонусы (включая кэшбэк)"] = np.where(
-                resulted["Бонусы (включая кэшбэк)"].isna(),
-                round(abs(resulted["Сумма операции"]) / 100, 2),  # Если NaN, присваиваем новое значение
-                round(
-                    resulted["Бонусы (включая кэшбэк)"] + abs(resulted["Сумма операции"]) / 100,
-                    2,
-                ),
-            )  # Иначе, складываем
-            resulted.replace([np.inf, -np.inf], np.nan).fillna(0)
+    logger.info("подбор необходимых данных")
+    filter_result = filtered_data_start[
+        filtered_data_start.notna().any(axis=1)  # Проверка на ненулевые значения во всех колонках
+        & (filtered_data_start["Сумма операции"] < 0)  # Сумма операции отрицательна
+        & (filtered_data_start["Категория"] == category)  # Категория равна заданной
+    ]
+    filter_result = filter_result.copy()
+    resulted = filter_result[
+        [
+            "Дата платежа",
+            "Номер карты",
+            "Статус",
+            "Сумма операции",
+            "Кэшбэк",
+            "MCC",
+            "Категория",
+            "Описание",
+            "Округление на инвесткопилку",
+            "Бонусы (включая кэшбэк)",
+        ]
+    ]
+    resulted = resulted.copy()
+    resulted["Номер карты"] = resulted["Номер карты"].apply(lambda x: x.replace("*", "") if isinstance(x, str) else x)
+    resulted["Кэшбэк"] = resulted["Кэшбэк"].fillna(round(abs(resulted["Сумма операции"]) / 100, 2))
+    resulted["Бонусы (включая кэшбэк)"] = np.where(
+        resulted["Бонусы (включая кэшбэк)"].isna(),
+        round(abs(resulted["Сумма операции"]) / 100, 2),  # Если NaN, присваиваем новое значение
+        round(
+            resulted["Бонусы (включая кэшбэк)"] + abs(resulted["Сумма операции"]) / 100,
+            2,
+        ),
+    )  # Иначе, складываем
+    resulted = pd.DataFrame(resulted.replace([np.inf, -np.inf], np.nan).fillna(0))
 
-            logger.info("формирование файла")
-            workbook = xlsxwriter.Workbook("../data/transactions.xlsx")
-            worksheet = workbook.add_worksheet()
-            for col_num, col_data in enumerate(resulted.columns):
-                worksheet.set_column(col_num, col_num, 50)
+    return resulted
 
-            # Запись заголовков
-            for col_num, col_name in enumerate(resulted.columns):
-                worksheet.write(0, col_num, col_name)
 
-            # Запись данных
-            for row_num, row_data in enumerate(resulted.values):
-                worksheet.write_row(row_num + 1, 0, row_data)
+def save_to_file(filename):  # type:ignore[no-untyped-def]
+    """записывает в файл результат из spending_by_category"""
 
-            workbook.close()
+    def decorator(func):  # type:ignore[no-untyped-def]
+        def wrapper(*args, **kwargs):  # type:ignore[no-untyped-def]
+            resulted = spending_by_category(*args, **kwargs)
+            workbook = None
+            try:
+                logger.info("формирование файла")
+                workbook = xlsxwriter.Workbook(os.path.join(os.path.dirname(__file__), filename))
+                worksheet = workbook.add_worksheet()
+                for col_num, col_data in enumerate(resulted.columns):
+                    worksheet.set_column(col_num, col_num, 50)
 
-            return result
+                # Запись заголовков
+                for col_num, col_name in enumerate(resulted.columns):
+                    worksheet.write(0, col_num, col_name)
+
+                # Запись данных
+                for row_num, row_data in enumerate(resulted.values):
+                    worksheet.write_row(row_num + 1, 0, row_data)
+
+                logger.info("сформирован файл")
+
+            except xlsxwriter.exceptions.XlsxWriterException as e:
+                logger.error(f"произошла ошибка {e}")
+                print(f"Произошла ошибка записи {str(e)}")
+
+            finally:
+                workbook.close()
+
+            return func(*args, **kwargs)
 
         return wrapper
 
-    return decorator
+    return decorator  # type: ignore[return-value]
 
 
-@spending_by_category(
-    transactions=pd.read_excel(file_path_param_r, sheet_name="Отчет по операциям"),
-    category="Аптеки",
-    date="2021-12-30 08:16:00",
-)
-def categories(transactions: pd.DataFrame, category: str, date: Optional[str]=None):  # type: ignore[no-untyped-def]
-
+@save_to_file(filename=os.path.join(os.path.dirname(__file__), "../data/result.xlsx"))  # type: ignore[func-returns-value]
+def categories(transactions: pd.DataFrame, category: str = "Аптеки", date: Optional[str] = "2021-12-30 08:16:00"):  # type: ignore[no-untyped-def]
     print("В data сформирован файл с результатом")
-
-
-# def write_to_file(resulted):
-#     """Запись в xlsx-файл"""
-

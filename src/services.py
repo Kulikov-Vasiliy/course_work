@@ -2,18 +2,18 @@
 import json
 import logging
 import math
-from json import JSONDecodeError
 import os
+from json import JSONDecodeError
 
 import pandas as pd
 
-file_path_param_s = os.path.join(os.path.dirname(__file__),"../data/operations.xlsx")
+file_path_param_s = os.path.join(os.path.dirname(__file__), "../data/operations.xlsx")
 
 
 logger = logging.getLogger("services")
-log = os.path.join(os.path.dirname(__file__),'..', 'logs', 'services.log')
+log = os.path.join(os.path.dirname(__file__), "..", "logs", "services.log")
 file_handler = logging.FileHandler(
-    os.path.join(os.path.dirname(__file__),"../logs/services.log"),
+    os.path.join(os.path.dirname(__file__), "../logs/services.log"),
     "w",
     encoding="utf-8",
 )
