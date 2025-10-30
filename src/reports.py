@@ -24,6 +24,48 @@ logger.addHandler(file_handler)
 logger.setLevel(logging.INFO)
 
 
+def save_to_file(filename):  # type:ignore[no-untyped-def]
+    """записывает в файл результат из spending_by_category"""
+
+    def decorator(func):  # type:ignore[no-untyped-def]
+        def wrapper(*args, **kwargs):  # type:ignore[no-untyped-def]
+            resulted = func(*args, **kwargs)
+            workbook = None
+
+            try:
+                logger.info("формирование файла")
+                workbook = xlsxwriter.Workbook(os.path.join(os.path.dirname(__file__), filename))
+                worksheet = workbook.add_worksheet()
+                for col_num, col_data in enumerate(resulted.columns):
+                    worksheet.set_column(col_num, col_num, 50)
+
+                # Запись заголовков
+                for col_num, col_name in enumerate(resulted.columns):
+                    worksheet.write(0, col_num, col_name)
+
+                # Запись данных
+                for row_num, row_data in enumerate(resulted.values):
+                    worksheet.write_row(row_num + 1, 0, row_data)
+
+                logger.info("сформирован файл")
+
+            except xlsxwriter.exceptions.XlsxWriterException as e:
+                logger.error(f"произошла ошибка {e}")
+                print(f"Произошла ошибка записи {str(e)}")
+
+            finally:
+                workbook.close()
+
+            return resulted
+
+        return wrapper
+
+    return decorator  # type: ignore[return-value]
+
+
+@save_to_file(
+    filename=os.path.join(os.path.dirname(__file__), "../data/result.xlsx")
+)  # type: ignore[func-returns-value]
 def spending_by_category(transactions: pd.DataFrame, category: str, date: Optional[str] = None) -> pd.DataFrame:
     """возвращает расходы по выбранной категории
     за 3 последних месяца от заданного/текущего"""
@@ -88,46 +130,3 @@ def spending_by_category(transactions: pd.DataFrame, category: str, date: Option
     resulted = pd.DataFrame(resulted.replace([np.inf, -np.inf], np.nan).fillna(0))
 
     return resulted
-
-
-def save_to_file(filename):  # type:ignore[no-untyped-def]
-    """записывает в файл результат из spending_by_category"""
-
-    def decorator(func):  # type:ignore[no-untyped-def]
-        def wrapper(*args, **kwargs):  # type:ignore[no-untyped-def]
-            resulted = spending_by_category(*args, **kwargs)
-            workbook = None
-            try:
-                logger.info("формирование файла")
-                workbook = xlsxwriter.Workbook(os.path.join(os.path.dirname(__file__), filename))
-                worksheet = workbook.add_worksheet()
-                for col_num, col_data in enumerate(resulted.columns):
-                    worksheet.set_column(col_num, col_num, 50)
-
-                # Запись заголовков
-                for col_num, col_name in enumerate(resulted.columns):
-                    worksheet.write(0, col_num, col_name)
-
-                # Запись данных
-                for row_num, row_data in enumerate(resulted.values):
-                    worksheet.write_row(row_num + 1, 0, row_data)
-
-                logger.info("сформирован файл")
-
-            except xlsxwriter.exceptions.XlsxWriterException as e:
-                logger.error(f"произошла ошибка {e}")
-                print(f"Произошла ошибка записи {str(e)}")
-
-            finally:
-                workbook.close()
-
-            return func(*args, **kwargs)
-
-        return wrapper
-
-    return decorator  # type: ignore[return-value]
-
-
-@save_to_file(filename=os.path.join(os.path.dirname(__file__), "../data/result.xlsx"))  # type: ignore[func-returns-value]
-def categories(transactions: pd.DataFrame, category: str = "Аптеки", date: Optional[str] = "2021-12-30 08:16:00"):  # type: ignore[no-untyped-def]
-    print("В data сформирован файл с результатом")
