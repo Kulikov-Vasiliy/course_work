@@ -1,26 +1,21 @@
-# функция сервисов- Выгодные категории повышенного кешбэка
+# функция сервисов- Выгодные категории повышенного кэшбэка
 import json
-import math
 import logging
-
-import pandas as pd
+import math
+import os
 from json import JSONDecodeError
 
-file_path_param = (
-    "C:/Users/Я/Desktop/ДЛЯ РАБОТЫ/pythonProject/course_work/"
-    "pythonProject/data/operations.xlsx"
-)
+import pandas as pd
+
+file_path_param_s = os.path.join(os.path.dirname(__file__), "../data/operations.xlsx")
 
 
-logger = logging.getLogger("views")
-log = (
-    "C", "Users", "Я", "Desktop", "ДЛЯ РАБОТЫ", "pythonProject",
-    "course_work", "pythonProject", "course_work", "pythonProject",
-    "logs", "services.log",
-)
+logger = logging.getLogger("services")
+log = os.path.join(os.path.dirname(__file__), "..", "logs", "services.log")
 file_handler = logging.FileHandler(
-    "C:/Users/Я/Desktop/ДЛЯ РАБОТЫ/pythonProject/course_work/"
-    "pythonProject/logs/servises.log","w", encoding="utf-8",
+    os.path.join(os.path.dirname(__file__), "../logs/services.log"),
+    "w",
+    encoding="utf-8",
 )
 file_formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s")
 file_handler.setFormatter(file_formatter)
@@ -28,17 +23,12 @@ logger.addHandler(file_handler)
 logger.setLevel(logging.INFO)
 
 
-
 def analyze_cashback(file_path: str, year: int, month: int) -> str:
-    """анализирует выгодные категории возврата дс"""
+    """Анализирует выгодные категории возврата дс"""
     df = pd.read_excel(file_path, sheet_name="Отчет по операциям")
     logger.info("фильтрация данных")
-    df["Дата операции"] = pd.to_datetime(
-        df["Дата операции"], format="%d.%m.%Y %H:%M:%S"
-    )
-    filtered_data = df[
-        (df["Дата операции"].dt.year == year) & (df["Дата операции"].dt.month == month)
-    ]
+    df["Дата операции"] = pd.to_datetime(df["Дата операции"], format="%d.%m.%Y %H:%M:%S")
+    filtered_data = df[(df["Дата операции"].dt.year == year) & (df["Дата операции"].dt.month == month)]
     filtered_data = filtered_data.dropna(subset=["Категория"])
 
     try:

@@ -1,23 +1,10 @@
 import logging
+import os
 
 logger = logging.getLogger("utils")
-log = (
-    "C",
-    "Users",
-    "Я",
-    "Desktop",
-    "ДЛЯ РАБОТЫ",
-    "pythonProject",
-    "course_work",
-    "pythonProject",
-    "course_work",
-    "pythonProject",
-    "logs",
-    "utils.log",
-)
+log = os.path.join(os.path.dirname(__file__), "..", "logs", "utils.log")
 file_handler = logging.FileHandler(
-    "C:/Users/Я/Desktop/ДЛЯ РАБОТЫ/pythonProject/course_work/"
-    "pythonProject/logs/utils.log",
+    os.path.join(os.path.dirname(__file__), "../logs/utils.log"),
     "w",
     encoding="utf-8",
 )

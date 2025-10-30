@@ -1,6 +1,7 @@
 # вспомогательные функции основного функционала
 import os
 from datetime import datetime
+from typing import Any
 
 # noinspection PyUnresolvedReferences
 import pandas as pd
@@ -22,9 +23,7 @@ apiKey = os.getenv("API_KEY_RATE")
 
 def greet_result() -> str:
     """Приветствие в формате «Доброе утро» / «Добрый день» / «Добрый вечер» / «Доброй ночи»"""
-    logger.info(
-        "получение даты и времени пользователя, ее настройка для получения времени"
-    )
+    logger.info("получение даты и времени пользователя, ее настройка для получения времени")
     now = datetime.now()
     time_form = now.strftime("%H:%M:%S")  # только время
 
@@ -51,36 +50,30 @@ def get_date_time(date_time: str, date_format: str = "%Y-%m-%d %H:%M:%S") -> lis
 
 
 def get_path_period(path_file: str, time_period: list) -> DataFrame:
-    """фильтрует отчет по интервалу дат"""
+    """Фильтрует отчет по интервалу дат"""
     logger.info("выбор нужной страницы excel-файла, ее сортировка")
     df = pd.read_excel(path_file, sheet_name="Отчет по операциям")
     df["Дата операции"] = pd.to_datetime(df["Дата операции"], dayfirst=True)
     start_period = datetime.strptime(time_period[0], "%d.%m.%Y %H:%M:%S")
     last_date = datetime.strptime(time_period[1], "%d.%m.%Y %H:%M:%S")
-    filtered_df = df[
-        (df["Дата операции"] >= start_period) & (df["Дата операции"] <= last_date)
-    ]
+    filtered_df = df[(df["Дата операции"] >= start_period) & (df["Дата операции"] <= last_date)]
     sorted_df = filtered_df.sort_values(by="Дата операции", ascending=True)
 
     return sorted_df
 
 
 def get_card_spent(sorted_df: DataFrame) -> list[dict]:
-    """формирует из df список формата "cards":
+    """Формирует из df список формата "cards":
     [{"last_digits": "5814",
       "total_spent": 1262.00,
       "cashback": 12.62}]"""
     cards = []
     card_spent = {}
-    card_sorted = sorted_df[
-        ["Номер карты", "Сумма операции", "Кэшбэк", "Сумма операции с округлением"]
-    ]
+    card_sorted = sorted_df[["Номер карты", "Сумма операции", "Кэшбэк", "Сумма операции с округлением"]]
 
     logger.info("отбор нужных данных для пар ключ-значение списка cards")
     for i, row in card_sorted.iterrows():
-        sorted_df["Сумма операции"] = pd.to_numeric(
-            sorted_df["Сумма операции"], errors="coerce"
-        )
+        sorted_df["Сумма операции"] = pd.to_numeric(sorted_df["Сумма операции"], errors="coerce")
         sorted_df["Сумма операции с округлением"] = pd.to_numeric(
             sorted_df["Сумма операции с округлением"], errors="coerce"
         )
@@ -103,9 +96,7 @@ def get_card_spent(sorted_df: DataFrame) -> list[dict]:
             total_spent = row["Сумма операции"]
 
         logger.info("получение суммы возврата дс от расхода, вычисление сумм")
-        cashback = (
-            (row["Сумма операции"] / 100) if pd.isna(row["Кэшбэк"]) else row["Кэшбэк"]
-        )
+        cashback = (row["Сумма операции"] / 100) if pd.isna(row["Кэшбэк"]) else row["Кэшбэк"]
         cashback = abs(cashback)
 
         card_spent[last_digit]["total_spent"] += total_spent
@@ -123,47 +114,36 @@ def get_card_spent(sorted_df: DataFrame) -> list[dict]:
     return cards
 
 
-def transactions(sorted_df: DataFrame) -> list[dict]:
-    """формирует из df список формата "top_transactions":
+def transactions(sorted_df: DataFrame) -> list[dict[str, Any]]:
+    """Формирует из df список формата "top_transactions":
     [{"date": "21.12.2021",
       "amount": 1198.23,
       "category": "Переводы",
       "description": "Перевод Кредитная карта. ТП 10.2 RUR"}]"""
     top_transactions = []
     transaction_data = {}
-    transaction_sorted = sorted_df[
-        ["Дата платежа", "Сумма операции", "Категория", "Описание"]
-    ].sort_values(by="Дата платежа", ascending=False)
-
-    logger.info(
-        "определение источника данных для пар ключ-значение списка топ 5 расходов"
+    transaction_sorted = sorted_df[["Дата платежа", "Сумма платежа", "Категория", "Описание"]].sort_values(
+        by="Сумма платежа", ascending=False
     )
+
+    logger.info("определение источника данных для пар ключ-значение списка топ 5 расходов")
     for date, group in transaction_sorted.groupby("Дата платежа"):
-        top_5 = group.nlargest(5, "Сумма операции")
+        top_5 = group.nlargest(5, "Сумма платежа")
         for i, row in top_5.iterrows():
             logger.info("проверка наличия нужных данных")
-            if pd.isna(
-                row["Сумма операции"]
-                or row["Категория"]
-                or row["Описание"]
-                or row["Дата платежа"]
-            ):
+            if pd.isna(row["Сумма платежа"] or row["Категория"] or row["Описание"] or row["Дата платежа"]):
                 continue
-            logger.info("подбор значений, суммирование одинаковых операций по карте")
-            if "Сумма операции" not in transaction_data:
-                transaction_data[row["Сумма операции"]] = {
+            logger.info("подбор значений, суммирование одинаковых операций за день по карте")
+            if row["Сумма платежа"] not in transaction_data:
+                transaction_data[row["Сумма платежа"]] = {
                     "date": row["Дата платежа"],
-                    "amount": row["Сумма операции"],
+                    "amount": row["Сумма платежа"],
                     "category": row["Категория"],
                     "description": row["Описание"],
                 }
 
-            elif (
-                "date" in transaction_data
-                and "category" in transaction_data
-                and "description" in transaction_data
-            ):
-                transaction_data["amount"] += sorted_df["Сумма операции"]  # type: ignore[assignment]
+            else:
+                transaction_data[row["Сумма платежа"]]["amount"] += row["Сумма платежа"]
 
     logger.info("формирование итогового списка")
     for amount, values in transaction_data.items():
@@ -174,14 +154,13 @@ def transactions(sorted_df: DataFrame) -> list[dict]:
             "description": values["description"],
         }
         top_transactions.append(data)
-        if len(top_transactions) >= 5:
-            break
+        top_transactions = transaction_sorted.head(5).to_dict("records")  # type: ignore[assignment]
 
     return top_transactions
 
 
 def get_currency() -> list[dict] | str:  # type: ignore[return]
-    """получает стоимость USD и EUR и формирует список
+    """Получает стоимость USD и EUR и формирует список
     [{"currency": "USD",
     "rate": 82.00
     }]"""
@@ -205,9 +184,7 @@ def get_currency() -> list[dict] | str:  # type: ignore[return]
             result = response.json()
             logger.info("получение стоимости валюты")
             if "Realtime Currency Exchange Rate" in result:
-                rate = float(
-                    result["Realtime Currency Exchange Rate"]["5. Exchange Rate"]
-                )
+                rate = float(result["Realtime Currency Exchange Rate"]["5. Exchange Rate"])
                 logger.info("формирование итога")
                 data = {"currency": currency, "rate": round(rate, 2)}
                 currency_rate.append(data)
@@ -225,7 +202,7 @@ def get_currency() -> list[dict] | str:  # type: ignore[return]
 
 
 def get_stock_price() -> list[dict] | str:  # type: ignore[return]
-    """получает список с ценами ценных бумаг в составе фонда ОША и формирует список
+    """Получает список с ценами ценных бумаг в составе фонда ОША и формирует список
     [{"stock": "AAPL",
      "price": 150.12}]"""
     response = None
@@ -233,9 +210,7 @@ def get_stock_price() -> list[dict] | str:  # type: ignore[return]
     try:
         api_url = "https://api.api-ninjas.com/v1/sp500"
         headers = {"X-Api-Key": FOUNDATION_API}
-        logger.info(
-            "подключение к api-ресурсу для получения актуального состава S&P500"
-        )
+        logger.info("подключение к api-ресурсу для получения актуального состава S&P500")
         response = requests.get(api_url, headers=headers)
         response.raise_for_status()
         result = response.json()
@@ -250,9 +225,7 @@ def get_stock_price() -> list[dict] | str:  # type: ignore[return]
                 "sector": sector,
             }
 
-            logger.info(
-                "подключение к инвестиционному api-ресурсу для получения цены актива из состава индекса"
-            )
+            logger.info("подключение к инвестиционному api-ресурсу для получения цены актива из состава индекса")
             if "stock" in data:
                 url = "https://finnhub.io/api/v1/quote"
                 payload = {"token": apiKey, "symbol": ticker}
